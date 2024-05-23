@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blue-collar Worker Filter</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom right, #8B4513, #F5F5DC);
+            background-size: cover;
+            background-repeat: no-repeat;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            width: 80%;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: relative; /* Ensure button is positioned relative to container */
+        }
+        .filter-form {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .filter-form label {
+            margin-right: 10px;
+        }
+        .filter-form input,
+        .filter-form select {
+            border-radius: 20px;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+        }
+        .filter-form button {
+            border: none;
+            border-radius: 20px;
+            padding: 5px 20px;
+            background-color: lavender;
+            cursor: pointer;
+        }
+        .filter-form button:hover {
+            background-color: darkviolet;
+            color: white;
+        }
+        .worker-card {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+      
+        .worker-details {
+            margin-left: 30px;
+        }
+        .worker-name {
+            display: flex;
+            align-items: center;
+        }
+        .worker-checkbox {
+            /* position: absolute; Position checkbox */
+            margin-right: 10px;
+            /* top: 10px; /* Adjust vertical position */
+            /* left: 10px; Adjust horizontal position */
+        }
+       
+        #send-email-btn {
+            border: none;
+            border-radius: 20px;
+            padding: 10px 20px; /* Add padding */
+            background-color: darkviolet; /* Use dark lavender color */
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); /* Add shadow */
+            position: absolute; /* Position button */
+            bottom: 20px; /* Adjust distance from bottom */
+            left: 50%; /* Align button horizontally */
+            transform: translateX(-50%); /* Center button */
+        }
+
+        #send-email-btn:hover {
+            background-color: darkorchid; /* Darken color on hover */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Blue-collar Worker Filter</h1>
+        <form class="filter-form">
+            <label for="age">Age:</label>
+            <select id="age" name="age">
+                <option value="">Select Age Range</option>
+                <option value="18-30">18-30</option>
+                <option value="31-40">31-40</option>
+                <option value="41-50">41-50</option>
+                <!-- Add more options as needed -->
+            </select>
+            
+            <label for="experience">Experience:</label>
+            <select id="experience" name="experience">
+                <option value="">Select Experience Range</option>
+                <option value="0-5">0-5</option>
+                <option value="6-10">6-10</option>
+                <option value="11-15">11-15</option>
+                <option value="16-20">16-20</option>
+                <!-- Add more options as needed -->
+            </select>
+            <label for="location">Location:</label>
+            <input type="text" id="location" name="location">
+            
+            <label for="job">Occupation:</label>
+            <select id="job" name="job">
+                <option value="">Select Occupation</option>
+                <option value="Carpenter">Carpenter</option>
+                <option value="Plumber">Plumber</option>
+                <option value="Electrician">Electrician</option>
+                <option value="Mechanic">Mechanic</option>
+                <option value="Painter">Painter</option>
+                <option value="Welder">Welder</option>
+                <!-- Add more options as needed -->
+            </select>
+            <button type="button" onclick="filterWorkers()">Filter</button>
+        </form>
+
+        <div id="worker-list">
+            <!-- Worker cards will be displayed here -->
+        </div>
+        <button id="send-email-btn" onclick="sendEmail()" style="display: none;">Send Selected Workers by Email</button>
+    </div>
+    <script>
+        function filterWorkers() {
+            // Get filter values
+            var ageRange = document.getElementById('age').value;
+            var experienceRange = document.getElementById('experience').value;
+            var location = document.getElementById('location').value;
+            var job = document.getElementById('job').value;
+            // Perform filtering (fetch data from JSON file)
+            fetch('workers.json')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('All workers:', data);
+                    var filteredWorkers = data.filter(function(worker) {
+                        console.log('Current worker:', worker);
+                        return (ageRange==="" || isInRange(worker.age, ageRange)) &&
+                               (experienceRange === "" || isInRange(worker.experience, experienceRange)) &&
+                               (location==="" || worker.location.toLowerCase().includes(location.toLowerCase())) &&
+                               (job==="" || worker.job === job);
+                    });
+
+                    console.log('Filtered workers:', filteredWorkers);
+
+                    // Display filtered workers
+                    displayWorkers(filteredWorkers);
+                    updateSendEmailButtonVisibility();
+                })
+                .catch(error => console.error('Error fetching workers data:', error));
+        }
+        function isInRange(value, range) {
+            var parts = range.split('-');
+            var min = parseInt(parts[0]);
+            var max = parseInt(parts[1]);
+            return value >= min && value <= max;
+        }
+        function displayWorkers(workers) {
+            var workerList = document.getElementById('worker-list');
+            workerList.innerHTML = '';
+            if (workers.length === 0) {
+                var noWorkersMessage = document.createElement('div');
+                noWorkersMessage.classList.add('no-workers-message');
+                noWorkersMessage.textContent = 'Sorry, no workers available for the filters';
+                workerList.appendChild(noWorkersMessage);
+                } else {
+                    workers.forEach(function(worker) {
+                        var card = document.createElement('div');
+                        card.classList.add('worker-card');
+                        var checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.classList.add('worker-checkbox');
+                        var details = document.createElement('div');
+                        details.classList.add('worker-details');
+                        details.innerHTML = `
+                        <div class="worker-name">
+                            <input type="checkbox" class="worker-checkbox"> <!-- Checkbox next to name with gap -->
+                            <h3>${worker.name}</h3>
+                        </div>
+                        <p>Age: ${worker.age}</p>
+                        <p>Experience: ${worker.experience} years</p>
+                        <p>Location: ${worker.location}</p>
+                        <p>Occupation: ${worker.job}</p>
+                        `;
+                        // details.innerHTML = `
+                        //     <h3>${worker.name}</h3>
+                        //     <p>Age: ${worker.age}</p>
+                        //     <p>Experience: ${worker.experience} years</p>
+                        //     <p>Location: ${worker.location}</p>
+                        //     <p>Occupation: ${worker.job}</p>
+                        // `;
+                        // card.appendChild(checkbox);
+                        card.appendChild(details);
+                        workerList.appendChild(card);
+            });
+            }
+       }
+        function updateSendEmailButtonVisibility() {
+            var selectedCheckboxes = document.querySelectorAll('.worker-checkbox:checked');
+            var sendEmailBtn = document.getElementById('send-email-btn');
+            if (selectedCheckboxes.length > 0) {
+                sendEmailBtn.style.display = 'block';
+            } else {
+                sendEmailBtn.style.display = 'none';
+            }
+        }
+        function sendEmail() {
+            var selectedCheckboxes = document.querySelectorAll('.worker-checkbox:checked');
+            var workerDetails = [];
+            selectedCheckboxes.forEach(function(checkbox) {
+                var card = checkbox.closest('.worker-card');
+                var details = card.innerText.trim();
+                workerDetails.push(details);
+            });
+            var emailData = {
+                to: 'ajesh.amazon@gmail.com',
+                subject: 'hi we are interested in the following candidates for our project',
+                body: workerDetails.join('\n\n')
+            };
+
+            fetch('/send-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(emailData)
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Email sent successfully!');
+                } else {
+                    alert('Failed to send email. Please try again later.');
+                }
+            })
+            .catch(error => {
+                console.error('Error sending email:', error);
+                alert('Failed to send email. Please try again later.');
+            });
+        }
+        document.addEventListener('change', function(event) {
+            if (event.target.classList.contains('worker-checkbox')) {
+                updateSendEmailButtonVisibility();
+            }
+        });
+    </script>
+</body>
+</html>
